@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: ssl-client
+
+server:
+  port: 7778
+
+request:
+  #?????????ms
+  read-timeout: 15000
+  #??????????ms
+  connect-timeout: 15000
+  #??????MaxTotal???
+  max-total: 200
+  #????????????
+  max-per-route: 200
+  type: https
+  # ???GM SSL,???false
+  is-gm: true
+  two-way:
+    #????,????????,enabled:???disabled:??
+    enabled: enabled
+    #?????
+    #        client-p12-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/newssl/cliKeystore
+    #        #??????
+    #        ca-keystore-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/newssl/truscatlist.keystore
+    #        key-storepass: 123456
+    #        trust-store-password: 123456
+    #        client-p12-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/src/main/resources/ssl/keystore.p12
+    #        ca-keystore-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/src/main/resources/ssl/truststore.p12
+    #        key-storepass: keystorepass
+    #        trust-store-password: truststorepass
+    client-p12-path: /persistent/disk/workspace/001-java/003-work/ssl/ssl-server/ssl-client/ssl/keystore.p12
+    ca-keystore-path: /persistent/disk/workspace/001-java/003-work/ssl/ssl-server/ssl-client/ssl/truststore.p12
+    key-storepass: 123456
+    trust-store-password: 123456
+
+
+logging:
+  level:
+    root: info
