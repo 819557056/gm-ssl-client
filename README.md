@@ -108,19 +108,19 @@ mvn spring-boot:run
 
 #### 测试接口 1 - 本地服务端
 ```bash
-curl http://localhost:7778/test/cli/t1
+curl http://127.0.0.1:7778/test/cli/t1
 ```
 连接到 `https://127.0.0.1:8888`
 
 #### 测试接口 2 - 标准 HTTPS
 ```bash
-curl http://localhost:7778/test/cli/t2
+curl http://127.0.0.1:7778/test/cli/t2
 ```
-连接到 `https://localhost:8443`
+连接到 `https://127.0.0.1:8443`
 
 #### 测试接口 3 - 远程服务端
 ```bash
-curl http://localhost:7778/test/cli/t3
+curl http://127.0.0.1:7778/test/cli/t3
 ```
 连接到 `https://192.168.100.3:8443`
 
