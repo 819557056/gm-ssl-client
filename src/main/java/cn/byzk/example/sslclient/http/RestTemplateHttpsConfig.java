@@ -7,11 +7,13 @@ import com.tencent.kona.pkix.KonaPKIXProvider;
 import com.tencent.kona.ssl.KonaSSLProvider;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.HttpsSupport;
@@ -22,6 +24,7 @@ import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.util.TimeValue;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -127,6 +130,12 @@ public class RestTemplateHttpsConfig {
      */
     @Value("${request.is-gm:false}")
     private boolean isGm;
+
+    /**
+     * SSL密钥更新时间（单位：小时），默认为8小时
+     */
+    @Value("${request.ssl-key-update-hours:8}")
+    private int sslKeyUpdateHours;
 
     private static final String provider = "KonaPKIX";
     private static final String providerSSL = "KonaSSL";
@@ -245,6 +254,7 @@ public class RestTemplateHttpsConfig {
             String[] protocols;
             SSLConnectionSocketFactory sslConnectionSocketFactory;
             if (isGm) {
+                log.debug("使用GM-SSL协议");
 //                sslContext = customGm(getClientP12Path()
                 sslContext = customGmKona(getClientP12Path()
                         , getCaKeystorePath(), getKeyStorePasswd());
@@ -278,27 +288,27 @@ public class RestTemplateHttpsConfig {
             }
 
 
-            Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
-                    .register("https", sslConnectionSocketFactory)
+//            Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+//                    .register("https", sslConnectionSocketFactory)
+//                    .build();
+
+            // 计算连接TTL（Time To Live），将小时转换为毫秒
+            TimeValue connectionTimeToLive = TimeValue.ofHours(sslKeyUpdateHours);
+
+            // 使用ConnectionConfig设置连接的生命周期
+            ConnectionConfig connectionConfig = ConnectionConfig.custom()
+                    .setTimeToLive(connectionTimeToLive)
                     .build();
 
+            // 使用Builder模式创建连接管理器，设置连接TTL以实现密钥更新
+            connMgr = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setSSLSocketFactory(sslConnectionSocketFactory)
+                    .setDefaultConnectionConfig(connectionConfig)
+                    .setMaxConnTotal(maxTotal)
+                    .setMaxConnPerRoute(maxPerRout)
+                    .build();
 
-            connMgr = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
-
-            /**
-             * 服务1要通过Fluent调用服务2的接口。服务1发送了400个请求，
-             * 但由于Fluent默认只支持maxPerRoute=100，MaxTotal=200，
-             * 比如接口执行时间为500ms，由于maxPerRoute=100，所以要分为100,100,100,100分四批来执行，
-             * 全部执行完成需要2000ms。而如果maxPerRoute设置为400，全部执行完需要500ms。
-             * 在这种情况下（提供并发能力时）就要对这两个参数进行设置了。
-             * 一次最多接收MaxTotal次请求
-             */
-            connMgr.setMaxTotal(maxTotal);
-
-            /**
-             * 每次能并行接收的请求数量
-             */
-            connMgr.setDefaultMaxPerRoute(maxPerRout);
+            log.debug("SSL客户端连接管理器已配置，密钥更新时间: {} 小时", sslKeyUpdateHours);
 
             return HttpClients.custom().setDefaultRequestConfig(config).setConnectionManager(connMgr).build();
 
@@ -330,25 +340,25 @@ public class RestTemplateHttpsConfig {
                     .register("https", sslSocketFactory)
                     .build();
 
+            // 计算连接TTL（Time To Live），将小时转换为毫秒
+            TimeValue connectionTimeToLive = TimeValue.ofHours(sslKeyUpdateHours);
+
+            // 使用ConnectionConfig设置连接的生命周期
+            ConnectionConfig connectionConfig = ConnectionConfig.custom()
+                    .setTimeToLive(connectionTimeToLive)
+                    .build();
 
             // now, we create connection-manager using our Registry.
             //      -- allows multi-threaded use
-            connMgr = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
+            // 使用Builder模式创建连接管理器，设置连接TTL以实现密钥更新
+            connMgr = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setSSLSocketFactory(sslSocketFactory)
+                    .setDefaultConnectionConfig(connectionConfig)
+                    .setMaxConnTotal(maxTotal)
+                    .setMaxConnPerRoute(maxPerRout)
+                    .build();
 
-            /**
-             * 服务1要通过Fluent调用服务2的接口。服务1发送了400个请求，
-             * 但由于Fluent默认只支持maxPerRoute=100，MaxTotal=200，
-             * 比如接口执行时间为500ms，由于maxPerRoute=100，所以要分为100,100,100,100分四批来执行，
-             * 全部执行完成需要2000ms。而如果maxPerRoute设置为400，全部执行完需要500ms。
-             * 在这种情况下（提供并发能力时）就要对这两个参数进行设置了。
-             * 一次最多接收MaxTotal次请求
-             */
-            connMgr.setMaxTotal(maxTotal);
-
-            /**
-             * 每次能并行接收的请求数量
-             */
-            connMgr.setDefaultMaxPerRoute(maxPerRout);
+            log.debug("SSL客户端连接管理器已配置（非双向认证），密钥更新时间: {} 小时", sslKeyUpdateHours);
 
             b.setConnectionManager(connMgr).setDefaultRequestConfig(config);
 

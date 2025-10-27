@@ -20,6 +20,7 @@
 - ✅ 提供灵活的 HTTP/HTTPS 客户端配置
 - ✅ 封装 HTTP 请求工具类
 - ✅ 支持标准 SSL 和国密 SSL 切换
+- ✅ **自动 SSL 密钥更新机制**（可配置更新周期）
 
 ## 项目结构
 
@@ -72,6 +73,7 @@ request:
   max-per-route: 200            # 每个路由的最大连接数
   type: https                   # 请求类型：http/https
   is-gm: true                   # 是否启用国密 SSL
+  ssl-key-update-hours: 8       # SSL密钥更新时间（小时），默认8小时
   
   two-way:
     enabled: enabled            # 启用双向认证
@@ -143,10 +145,67 @@ HTTPS 客户端配置类，负责：
 - 证书加载和验证
 - 国密算法支持配置
 - 双向认证设置
+- **SSL 密钥更新管理**（新增）
 
 ### RestTemplateHttpConfig
 
 HTTP 客户端配置类（非 SSL）。
+
+## SSL 密钥更新功能
+
+为增强安全性，本项目支持自动的 SSL 密钥更新机制。通过设置连接的生命周期（TTL），系统会在指定时间后自动关闭连接并重新建立，从而触发新的 SSL 握手和密钥更新。
+
+### 工作原理
+
+1. **连接 TTL（Time To Live）**: 当连接存活时间达到设定值时，连接管理器会自动关闭该连接
+2. **自动重连**: 下次请求时会建立新的连接，触发完整的 SSL 握手
+3. **密钥更新**: 新的握手过程会生成新的会话密钥，提高通信安全性
+
+### 配置方式
+
+在 `application.yml` 中配置密钥更新时间：
+
+```yaml
+request:
+  ssl-key-update-hours: 8  # 设置为8小时（默认值）
+```
+
+### 推荐设置
+
+- **高安全环境**: 4-8 小时
+- **一般环境**: 8-12 小时
+- **低频使用**: 24 小时
+
+**注意**: 设置过短可能导致频繁的连接重建，影响性能；设置过长可能降低安全性。
+
+### 技术实现
+
+使用 Apache HttpClient 5 的 `PoolingHttpClientConnectionManager` 实现：
+
+```java
+// 计算连接TTL（Time To Live）
+TimeValue connectionTimeToLive = TimeValue.ofHours(sslKeyUpdateHours);
+
+// 使用ConnectionConfig设置连接的生命周期
+ConnectionConfig connectionConfig = ConnectionConfig.custom()
+    .setTimeToLive(connectionTimeToLive)
+    .build();
+
+// 创建连接管理器
+PoolingHttpClientConnectionManagerBuilder.create()
+    .setDefaultConnectionConfig(connectionConfig)
+    .setMaxConnTotal(maxTotal)
+    .setMaxConnPerRoute(maxPerRout)
+    .build();
+```
+
+### 监控日志
+
+启动时会输出配置信息：
+
+```
+INFO - SSL客户端连接管理器已配置，密钥更新时间: 8 小时
+```
 
 ## 国密支持
 
@@ -231,6 +290,7 @@ request:
 request:
   type: https
   is-gm: false
+  ssl-key-update-hours: 8
   two-way:
     enabled: enabled
     client-p12-path: /path/to/standard-keystore.p12
@@ -245,6 +305,7 @@ request:
 request:
   type: https
   is-gm: true
+  ssl-key-update-hours: 8
   two-way:
     enabled: enabled
     client-p12-path: /path/to/gm-keystore.p12
@@ -322,4 +383,5 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 ---
 
 **注意**: 请勿在生产环境中使用测试证书，务必使用正规 CA 签发的证书。
+
 

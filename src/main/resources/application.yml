@@ -6,33 +6,29 @@ server:
   port: 7778
 
 request:
-  #?????????ms
+  #读超时时间，单位为ms
   read-timeout: 15000
-  #??????????ms
+  #连接超时时间，单位为ms
   connect-timeout: 15000
-  #??????MaxTotal???
+  #一次最多接收MaxTotal次请求
   max-total: 200
-  #????????????
+  #每次能并行接收的请求数量
   max-per-route: 200
   type: https
-  # ???GM SSL,???false
+  # true：GM SSL,false：rsa
   is-gm: true
+  # SSL密钥更新时间（单位：小时）
+  ssl-key-update-hours: 8
   two-way:
-    #????,????????,enabled:???disabled:??
+    #双向认证,客户端验证服务端,enabled:启用，disabled:停用
     enabled: enabled
-    #?????
-    #        client-p12-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/newssl/cliKeystore
-    #        #??????
-    #        ca-keystore-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/newssl/truscatlist.keystore
-    #        key-storepass: 123456
-    #        trust-store-password: 123456
-    #        client-p12-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/src/main/resources/ssl/keystore.p12
-    #        ca-keystore-path: /persistent/disk/workspace/001-java/003-work/ssl/demo-client/src/main/resources/ssl/truststore.p12
-    #        key-storepass: keystorepass
-    #        trust-store-password: truststorepass
+    #客户端证书
     client-p12-path: /persistent/disk/workspace/001-java/003-work/ssl/ssl-server/ssl-client/ssl/keystore.p12
+    #根证书信任链
     ca-keystore-path: /persistent/disk/workspace/001-java/003-work/ssl/ssl-server/ssl-client/ssl/truststore.p12
+    #客户端证书密码
     key-storepass: 123456
+    #根证书链密码,没有密码设置为nopassword
     trust-store-password: 123456
 
 
