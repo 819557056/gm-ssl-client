@@ -1,6 +1,8 @@
 package cn.byzk.example.sslclient.http;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.byzk.example.sslclient.config.KonaProviderRegistrar;
+import cn.byzk.example.sslclient.config.KonaSecurityConstants;
 import com.tencent.kona.KonaProvider;
 import com.tencent.kona.crypto.KonaCryptoProvider;
 import com.tencent.kona.pkix.KonaPKIXProvider;
@@ -137,10 +139,8 @@ public class RestTemplateHttpsConfig {
     @Value("${request.ssl-key-update-hours:8}")
     private int sslKeyUpdateHours;
 
-    private static final String provider = "KonaPKIX";
-    private static final String providerSSL = "KonaSSL";
-    //            String protocol = "TLSv1.1";
-    private static final String protocol = "TLCPv1.1";
+    private static final String provider = KonaSecurityConstants.PROVIDER_KONA;
+    private static final String protocol = KonaSecurityConstants.PROTOCOL_TLCP_V1_1;
 
 
     public RestTemplate restTemplate(ClientHttpRequestFactory factory) {
@@ -468,7 +468,7 @@ public class RestTemplateHttpsConfig {
         try {
 
             // 创建自定义的密钥管理器
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance("NewSunX509", providerSSL);
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KonaSecurityConstants.KEY_MANAGER_ALGORITHM, provider);
             KeyStore keyStore = KeyStore.getInstance("PKCS12", provider);
             char[] keyStorePassword = keyStorePasswd.toCharArray();
             keyStore.load(new FileInputStream(clientP12), keyStorePassword);
@@ -478,11 +478,11 @@ public class RestTemplateHttpsConfig {
             KeyStore trustStore = KeyStore.getInstance("PKCS12", provider);
             instream = new FileInputStream(caTrustLib);
             trustStore.load(instream, trustStorePasswd.toCharArray());
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX", providerSSL);
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(KonaSecurityConstants.TRUST_MANAGER_ALGORITHM, provider);
             tmf.init(trustStore);
 
             // 创建 SSLContext
-            SSLContext context = SSLContext.getInstance(protocol, providerSSL);
+            SSLContext context = SSLContext.getInstance(protocol, provider);
             context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
 //            context.init(null, null, null);
