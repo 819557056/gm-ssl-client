@@ -1,8 +1,7 @@
 package cn.byzk.example.sslclient.http;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.byzk.example.sslclient.config.KonaProviderRegistrar;
 import cn.byzk.example.sslclient.config.KonaSecurityConstants;
+import cn.hutool.core.bean.BeanUtil;
 import com.tencent.kona.KonaProvider;
 import com.tencent.kona.crypto.KonaCryptoProvider;
 import com.tencent.kona.pkix.KonaPKIXProvider;
@@ -25,8 +24,8 @@ import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
-import org.apache.hc.core5.util.Timeout;
 import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -444,7 +443,8 @@ public class RestTemplateHttpsConfig {
 //            // 初始化 SSLContext
 //            context.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 //
-////            context.init(null, null, null);
+
+    /// /            context.init(null, null, null);
 //
 //            return context;
 //        } catch (Exception e) {
@@ -452,7 +452,6 @@ public class RestTemplateHttpsConfig {
 //        }
 //
 //    }
-
     public SSLContext customGmKona(String clientP12, String caTrustLib, String password) {
 
         FileInputStream instream = null;
